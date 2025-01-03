@@ -37,17 +37,20 @@ CREATE TABLE dim_reviews (
     comments TEXT
 );
 
+ DROP TABLE IF EXISTS fact_bookings;
+
 -- Create Fact Tables
 CREATE TABLE fact_bookings (
-    booking_id SERIAL PRIMARY KEY,
-    listing_id BIGINT REFERENCES dim_listings(listing_id),
-    date DATE,
-    available BOOLEAN,
-    price NUMERIC,
-    adjusted_price NUMERIC,
-    minimum_nights INT,
-    maximum_nights INT
+    booking_id SERIAL PRIMARY KEY,  -- Auto-incrementing unique identifier for each booking
+    listing_id BIGINT REFERENCES dim_listings(listing_id),        
+    booked_from DATE NOT NULL,     
+    booked_to DATE NOT NULL,        
+    price NUMERIC, 
+    days_booked INT,  
+    potential_revenue NUMERIC
 );
+
+DROP TABLE IF EXISTS fact_success;
 
 CREATE TABLE fact_success (
     success_id SERIAL PRIMARY KEY,
@@ -55,5 +58,6 @@ CREATE TABLE fact_success (
     host_id BIGINT REFERENCES dim_hosts(host_id),
     success_score NUMERIC,
     reviews_count INT,
-    average_rating NUMERIC
+    average_rating NUMERIC,
+    price_dkk NUMERIC
 );

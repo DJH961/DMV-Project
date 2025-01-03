@@ -1,3 +1,10 @@
+-- Truncate tables before populating
+TRUNCATE TABLE dim_hosts;
+TRUNCATE TABLE dim_listings;
+TRUNCATE TABLE dim_reviews;
+TRUNCATE TABLE fact_bookings;
+TRUNCATE TABLE fact_success;
+
 -- Populate Hosts Dimension
 INSERT INTO dim_hosts (host_id, host_name, host_since, host_location, host_response_time, 
                        host_response_rate, host_acceptance_rate, host_is_superhost, 
@@ -49,23 +56,75 @@ WHERE listing_id IN (SELECT listing_id FROM dim_listings);
 
 
 -- Populate Bookings Fact Table
-INSERT INTO fact_bookings (listing_id, date, available, price, adjusted_price, minimum_nights, maximum_nights)
-SELECT DISTINCT
+WITH sorted_data AS (
+    SELECT
+        listing_id,
+        date,
+        price,
+        -- Calculate the difference in days from the previous date within the same listing_id as a numeric value
+        (date - LAG(date) OVER (PARTITION BY listing_id ORDER BY date)) AS date_diff
+    FROM staging_calendar
+    WHERE available = FALSE
+),
+
+grouped_data AS (
+    SELECT
+        listing_id,
+        date,
+        price,
+        -- Create a group identifier by checking gaps in dates
+        SUM(CASE 
+            WHEN date_diff IS NULL OR date_diff > 1 THEN 1 
+            ELSE 0 
+        END) OVER (PARTITION BY listing_id ORDER BY date) AS group_id
+    FROM sorted_data
+),
+
+aggregated_bookings AS (
+    SELECT
+        listing_id,
+        group_id,
+        MIN(date) AS booked_from,  -- First date in the group
+        MAX(date) AS booked_to,    -- Last date in the group
+        MAX(price) AS price        -- Price for the listing
+    FROM grouped_data
+    GROUP BY listing_id, group_id
+),
+
+final_bookings AS (
+    SELECT
+        listing_id,
+        group_id,
+        booked_from,
+        booked_to,
+        price,
+        -- Calculate the number of days booked
+        (AGE(booked_to, booked_from) + INTERVAL '1 day') AS days_booked,
+        -- Calculate potential revenue
+        price * (EXTRACT(DAY FROM AGE(booked_to, booked_from)) + 1) AS potential_revenue
+    FROM aggregated_bookings
+)
+INSERT INTO fact_bookings (listing_id, booked_from, booked_to, price, days_booked, potential_revenue)
+SELECT
     listing_id,
-    date::DATE,
-    CASE WHEN available = 't' THEN TRUE ELSE FALSE END AS available,
-    price::NUMERIC,
-    adjusted_price::NUMERIC,
-    minimum_nights,
-    maximum_nights
-FROM staging_calendar;
+    booked_from,
+    booked_to,
+    price,
+    EXTRACT(DAY FROM days_booked)::INT AS days_booked,
+    potential_revenue
+FROM final_bookings;
+
+
+
+
 
 -- Populate Success Fact Table
-INSERT INTO fact_success (listing_id, host_id, success_score, reviews_count, average_rating)
+INSERT INTO fact_success (listing_id, host_id, success_score, reviews_count, average_rating, price_dkk)
 SELECT DISTINCT
     l.listing_id,
     l.host_id,
-    (l.number_of_reviews * 0.5 + l.review_scores_rating * 0.3) AS success_score,
+    (l.number_of_reviews * l.review_scores_rating *l.price_dkk) AS success_score,
     l.number_of_reviews,
-    l.review_scores_rating
+    l.review_scores_rating,
+    l.price_dkk
 FROM staging_listings l;
