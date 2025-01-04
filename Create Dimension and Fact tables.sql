@@ -63,5 +63,8 @@ CREATE TABLE fact_success (
     reviews_count INT,
     average_rating NUMERIC,
     days_booked INT,
-    price_dkk NUMERIC
+    price_dkk NUMERIC,
+    booked_percentage NUMERIC,
+    performance_score INT,
+    quality_score INT
 );

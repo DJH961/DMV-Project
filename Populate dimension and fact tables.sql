@@ -122,16 +122,57 @@ FROM final_bookings;
 
 -- Populate Success Fact Table
 WITH booked_days as 
-(SELECT COUNT(DISTINCT s.date) as days_booked, s.listing_id from staging_calendar s WHERE s.available=FALSE GROUP BY s.listing_id)
-INSERT INTO fact_success (listing_id, host_id, success_score, success_score_without_price, reviews_count, average_rating, days_booked, price_dkk)
+(SELECT COUNT (DISTINCT s.date) as days_booked, s.listing_id
+FROM staging_calendar s
+WHERE s.available=FALSE GROUP BY s.listing_id),
+fact_table as (
 SELECT DISTINCT
     l.listing_id,
     l.host_id,
-    (LN(l.number_of_reviews) * l.review_scores_rating *l.price_dkk*COALESCE(booked_days.days_booked, 0)) AS success_score,
-    (LN(l.number_of_reviews)* l.review_scores_rating*COALESCE(booked_days.days_booked, 0)) AS success_score_without_price,
     l.number_of_reviews,
     l.review_scores_rating,
     COALESCE(booked_days.days_booked, 0) AS days_booked,
     l.price_dkk
 FROM staging_listings l
-LEFT JOIN booked_days ON booked_days.listing_id=l.listing_id;
+LEFT JOIN booked_days ON booked_days.listing_id=l.listing_id),
+
+stats AS (
+    SELECT
+		AVG(number_of_reviews) AS mean_reviews,
+        STDDEV(number_of_reviews) AS stddev_reviews,
+		MAX(number_of_reviews) as max_reviews,
+		MIN(review_scores_rating) as min_rating,
+		MAX(review_scores_rating) as max_rating,
+        AVG(price_dkk) AS mean_price,
+        STDDEV(price_dkk) AS stddev_price
+    FROM fact_table
+),
+normalized_data AS (
+    SELECT
+        f.listing_id,
+    	f.host_id,
+		f.number_of_reviews,
+    	f.review_scores_rating,
+    	f.days_booked,
+    	f.price_dkk,
+		--Log Normalization for Reviews and Ratings to between 0 and 1
+		LOG(f.review_scores_rating -stats.min_rating + 1) / LOG(stats.max_rating -stats.min_rating + 1) as normalized_rating,
+		--1 / (1 + EXP(-(f.number_of_reviews - stats.mean_reviews) / stats.stddev_reviews)) as normalized_reviews,
+		LOG(f.number_of_reviews  + 1) / LOG(stats.max_reviews + 1) as normalized_reviews,
+		f.days_booked/365.0 as booked_percentage,
+		--Price normalized with z-score and sigmoid
+		1 / (1 + EXP(-(f.price_dkk - stats.mean_price) / stats.stddev_price)) as normalized_price
+    FROM fact_table f, stats
+)
+INSERT INTO fact_success (listing_id, host_id, reviews_count, average_rating, days_booked, price_dkk, booked_percentage,performance_score, quality_score)
+SELECT
+        listing_id,
+    	host_id,
+		number_of_reviews,
+    	review_scores_rating,
+    	days_booked,
+    	price_dkk,
+		booked_percentage,
+		ROUND((normalized_rating+normalized_reviews+booked_percentage+normalized_price)*25) AS performance_score,
+		ROUND((normalized_rating+normalized_reviews+booked_percentage)/0.03) AS quality_score
+    FROM normalized_data
