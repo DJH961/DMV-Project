@@ -47,9 +47,11 @@ FROM staging_listings;
 INSERT INTO dim_reviews (review_id, listing_id, reviewer_id, reviewer_name, review_date, comments)
 SELECT DISTINCT
     guest_id AS review_id,
+    guest_id AS review_id,
     listing_id,
     reviewer_id,
     reviewer_name,
+    review_date::DATE AS review_date,
     review_date::DATE AS review_date,
     comments
 FROM staging_reviews
