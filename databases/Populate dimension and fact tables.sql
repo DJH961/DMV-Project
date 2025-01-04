@@ -24,7 +24,7 @@ FROM staging_listings;
 -- Populate Listings Dimension
 INSERT INTO dim_listings (listing_id, name, neighbourhood, neighbourhood_cleansed, property_type, 
                           room_type, accommodates, bathrooms_text, bedrooms, beds, amenities, 
-                          price_dkk, latitude, longitude)
+                          price_dkk, latitude, longitude, num_amenities)
 SELECT DISTINCT
     listing_id,
     name,
@@ -39,7 +39,8 @@ SELECT DISTINCT
     amenities,
     price_dkk::NUMERIC,
     latitude,
-    longitude
+    longitude,
+    num_amenities
 FROM staging_listings;
 
 -- Populate Reviews Dimension

@@ -25,7 +25,8 @@ CREATE TABLE dim_listings (
     amenities TEXT,
     price_dkk NUMERIC,
     latitude NUMERIC,
-    longitude NUMERIC
+    longitude NUMERIC,
+    num_amenities INT
 );
 
 CREATE TABLE dim_reviews (
