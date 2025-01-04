@@ -27,6 +27,7 @@ CREATE TABLE dim_listings (
     latitude NUMERIC,
     longitude NUMERIC,
     num_amenities INT
+    municipality TEXT
 );
 
 CREATE TABLE dim_reviews (

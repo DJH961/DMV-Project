@@ -1,6 +1,6 @@
 -- Truncate tables before populating
-TRUNCATE TABLE dim_hosts;
-TRUNCATE TABLE dim_listings;
+TRUNCATE TABLE dim_hosts CASCADE;
+TRUNCATE TABLE dim_listings CASCADE;
 TRUNCATE TABLE dim_reviews;
 TRUNCATE TABLE fact_bookings;
 TRUNCATE TABLE fact_success;
@@ -24,7 +24,7 @@ FROM staging_listings;
 -- Populate Listings Dimension
 INSERT INTO dim_listings (listing_id, name, neighbourhood, neighbourhood_cleansed, property_type, 
                           room_type, accommodates, bathrooms_text, bedrooms, beds, amenities, 
-                          price_dkk, latitude, longitude, num_amenities)
+                          price_dkk, latitude, longitude, num_amenities, municipality)
 SELECT DISTINCT
     listing_id,
     name,
@@ -40,7 +40,8 @@ SELECT DISTINCT
     price_dkk::NUMERIC,
     latitude,
     longitude,
-    num_amenities
+    num_amenities,
+    label_en
 FROM staging_listings;
 
 -- Populate Reviews Dimension
