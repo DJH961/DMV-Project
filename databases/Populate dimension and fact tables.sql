@@ -47,11 +47,9 @@ FROM staging_listings;
 INSERT INTO dim_reviews (review_id, listing_id, reviewer_id, reviewer_name, review_date, comments)
 SELECT DISTINCT
     guest_id AS review_id,
-    guest_id AS review_id,
     listing_id,
     reviewer_id,
     reviewer_name,
-    review_date::DATE AS review_date,
     review_date::DATE AS review_date,
     comments
 FROM staging_reviews
@@ -135,4 +133,4 @@ SELECT DISTINCT
     COALESCE(booked_days.days_booked, 0) AS days_booked,
     l.price_dkk
 FROM staging_listings l
-LEFT JOIN booked_days ON booked_days.listing_id=l.listing_id) ;
+LEFT JOIN booked_days ON booked_days.listing_id=l.listing_id;
