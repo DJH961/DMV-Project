@@ -46,11 +46,11 @@ FROM staging_listings;
 -- Populate Reviews Dimension
 INSERT INTO dim_reviews (review_id, listing_id, reviewer_id, reviewer_name, review_date, comments)
 SELECT DISTINCT
-    id AS review_id,
+    guest_id AS review_id,
     listing_id,
     reviewer_id,
     reviewer_name,
-    date::DATE AS review_date,
+    review_date::DATE AS review_date,
     comments
 FROM staging_reviews
 WHERE listing_id IN (SELECT listing_id FROM dim_listings);
@@ -120,13 +120,17 @@ FROM final_bookings;
 
 
 -- Populate Success Fact Table
-INSERT INTO fact_success (listing_id, host_id, success_score, reviews_count, average_rating, price_dkk)
+WITH booked_days as 
+(SELECT COUNT(s.date) as days_booked, s.listing_id from staging_calendar s WHERE s.available=FALSE GROUP BY s.listing_id)
+INSERT INTO fact_success (listing_id, host_id, success_score, success_score_without_price, reviews_count, average_rating, price_dkk)
 SELECT DISTINCT
     l.listing_id,
     l.host_id,
-    (l.number_of_reviews * l.review_scores_rating *l.price_dkk) AS success_score,
-    l.number_of_reviews* l.review_scores_rating AS success_score_without_price,
+    (LN(l.number_of_reviews) * l.review_scores_rating *l.price_dkk) AS success_score,
+    LN(l.number_of_reviews)* l.review_scores_rating AS success_score_without_price,
     l.number_of_reviews,
     l.review_scores_rating,
+    booked_days.days_booked,
     l.price_dkk
-FROM staging_listings l;
+FROM staging_listings l
+LEFT JOIN booked_days;

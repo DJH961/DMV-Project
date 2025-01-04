@@ -38,7 +38,7 @@ CREATE TABLE dim_reviews (
     comments TEXT
 );
 
- DROP TABLE IF EXISTS fact_bookings;
+ --DROP TABLE IF EXISTS fact_bookings;
 
 -- Create Fact Tables
 CREATE TABLE fact_bookings (
@@ -51,7 +51,7 @@ CREATE TABLE fact_bookings (
     potential_revenue NUMERIC
 );
 
-DROP TABLE IF EXISTS fact_success;
+--DROP TABLE IF EXISTS fact_success;
 
 CREATE TABLE fact_success (
     success_id SERIAL PRIMARY KEY,

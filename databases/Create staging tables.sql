@@ -90,6 +90,7 @@ CREATE TABLE IF NOT EXISTS public.staging_listings
     neighborhood_overview_format text COLLATE pg_catalog."default",
     host_about_format text COLLATE pg_catalog."default",
     num_amenities integer,
+    label_en text COLLATE pg_catalog."default",
     CONSTRAINT staging_listings_pkey PRIMARY KEY (listing_id)
 )
 
@@ -98,11 +99,11 @@ CREATE TABLE IF NOT EXISTS public.staging_listings
 CREATE TABLE IF NOT EXISTS public.staging_reviews
 (
     listing_id bigint,
-    id bigint NOT NULL,
-    date date,
+    guest_id bigint NOT NULL,
+    review_date date,
     reviewer_id bigint,
     reviewer_name text COLLATE pg_catalog."default",
     comments text COLLATE pg_catalog."default",
-    CONSTRAINT staging_reviews_pkey PRIMARY KEY (id)
+    CONSTRAINT staging_reviews_pkey PRIMARY KEY (guest_id)
 )
 
