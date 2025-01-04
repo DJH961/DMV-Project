@@ -58,6 +58,7 @@ CREATE TABLE fact_success (
     listing_id BIGINT REFERENCES dim_listings(listing_id),
     host_id BIGINT REFERENCES dim_hosts(host_id),
     success_score NUMERIC,
+    success_score_without_price NUMERIC,
     reviews_count INT,
     average_rating NUMERIC,
     price_dkk NUMERIC

@@ -125,6 +125,7 @@ SELECT DISTINCT
     l.listing_id,
     l.host_id,
     (l.number_of_reviews * l.review_scores_rating *l.price_dkk) AS success_score,
+    l.number_of_reviews* l.review_scores_rating AS success_score_without_price,
     l.number_of_reviews,
     l.review_scores_rating,
     l.price_dkk
