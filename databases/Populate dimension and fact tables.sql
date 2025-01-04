@@ -121,16 +121,16 @@ FROM final_bookings;
 
 -- Populate Success Fact Table
 WITH booked_days as 
-(SELECT COUNT(s.date) as days_booked, s.listing_id from staging_calendar s WHERE s.available=FALSE GROUP BY s.listing_id)
-INSERT INTO fact_success (listing_id, host_id, success_score, success_score_without_price, reviews_count, average_rating, price_dkk)
+(SELECT COUNT(DISTINCT s.date) as days_booked, s.listing_id from staging_calendar s WHERE s.available=FALSE GROUP BY s.listing_id)
+INSERT INTO fact_success (listing_id, host_id, success_score, success_score_without_price, reviews_count, average_rating, days_booked, price_dkk)
 SELECT DISTINCT
     l.listing_id,
     l.host_id,
-    (LN(l.number_of_reviews) * l.review_scores_rating *l.price_dkk) AS success_score,
-    LN(l.number_of_reviews)* l.review_scores_rating AS success_score_without_price,
+    (LN(l.number_of_reviews) * l.review_scores_rating *l.price_dkk*COALESCE(booked_days.days_booked, 0)) AS success_score,
+    (LN(l.number_of_reviews)* l.review_scores_rating*COALESCE(booked_days.days_booked, 0)) AS success_score_without_price,
     l.number_of_reviews,
     l.review_scores_rating,
-    booked_days.days_booked,
+    COALESCE(booked_days.days_booked, 0) AS days_booked,
     l.price_dkk
 FROM staging_listings l
-LEFT JOIN booked_days;
+LEFT JOIN booked_days ON booked_days.listing_id=l.listing_id) ;

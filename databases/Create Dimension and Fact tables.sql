@@ -61,5 +61,6 @@ CREATE TABLE fact_success (
     success_score_without_price NUMERIC,
     reviews_count INT,
     average_rating NUMERIC,
+    days_booked INT,
     price_dkk NUMERIC
 );
